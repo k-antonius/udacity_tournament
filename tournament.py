@@ -89,8 +89,9 @@ def playerStandings():
         matches: the number of matches the player has played
     """
     query = """select players.*, count(player_id) as num_matches 
-            from players join matches on players.id = matches.player_id 
-            group by players.id;"""
+            from players left outer join matches on 
+            players.id = matches.player_id 
+            group by players.id order by players.id;"""
     return makeQuery(query)
 
 
