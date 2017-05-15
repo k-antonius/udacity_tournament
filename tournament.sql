@@ -22,5 +22,5 @@ CREATE TABLE matches (
   match_id integer NOT NULL,
   player_id integer REFERENCES players (id),
   result integer CHECK (result = 0 OR result = 1),
-  rount integer NOT NULL
+  round_num integer NOT NULL
 );
