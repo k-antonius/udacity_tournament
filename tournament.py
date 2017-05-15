@@ -18,14 +18,14 @@ def cursQuery(curs, queryString, tup = None):
     curs.execute(queryString, tup)
     return curs
 
-def makeQuery(queryString):
+def makeQuery(queryString, tup=None):
     '''
     Makes a query and returns the result.
     @param queryString: the SQL query as a string.
     @return: list of tuples containing the cells of the table  
     '''
     conn = connect()
-    curs = cursQuery(conn.cursor(), queryString)
+    curs = cursQuery(conn.cursor(), queryString, tup)
     try:
         return curs.fetchall()
     except (psycopg2.ProgrammingError):
@@ -45,6 +45,8 @@ def deleteMatches():
     """Remove all the match records from the database."""
     query = "DELETE FROM matches *;"
     makeQuery(query)
+    resetRecord = "UPDATE players SET record = 0;"
+    makeQuery(resetRecord)
 
 
 def deletePlayers():
@@ -102,7 +104,50 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
- 
+    # query the greatest match ID so far, if NONE then this is 1
+    def getCurMatch(query):
+        """Gets the current match number
+        """
+        prevMatch =  makeQuery(query)[0][0]
+        if prevMatch != None:
+            return prevMatch + 1
+        else:
+            return 1
+
+    def getCurRound(query):
+        """Gets the current round. If this is the first round, returns 1.
+        Determines whether this match will end the round or is the beginning
+        of a new round.
+        """
+        prevRound = makeQuery(query)[0][0]
+        if prevRound != None:
+            roundCount = makeQuery("""SELECT COUNT(round_num) FROM matches 
+                 WHERE round_num = %s """, (prevRound,))[0][0]
+            if roundCount < countPlayers():
+                return prevRound
+            else:
+                return prevRound + 1
+        else:
+            return 1
+        
+#     def playerIDFromName(name):
+#         """Given the name of a player, returns its ID. Assumes player name
+#         is unique.
+#         """
+#         q = """SELECT id FROM players WHERE name = %s"""
+#         return makeQuery(q, (name,))[0][0]
+        
+    curRound = getCurRound("""SELECT MAX(round_num) FROM matches""")
+    curMatch = getCurMatch("""SELECT MAX(match_id) FROM matches""")    
+    insert = """INSERT INTO matches (match_id, player_id, result, round_num) 
+             VALUES (%s, %s, %s, %s), (%s, %s, %s, %s)"""
+    content = (curMatch, winner, 1, curRound,
+               curMatch, loser, 0, curRound)
+    insertRows(insert, content)
+    # need to update players table for wins as well
+    updatePlayers = """UPDATE players SET record = record + 1
+                    WHERE id = %s"""
+    insertRows(updatePlayers, (winner,))
  
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
