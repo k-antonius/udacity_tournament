@@ -60,9 +60,9 @@ def deleteMatches():
     '''Remove all the match records from the database.
     '''
 
-    query = "DELETE FROM matches *;"
+    query = "DELETE FROM matches *"
     makeQuery(query)
-    resetRecord = "UPDATE players SET record = 0;"
+    resetRecord = "UPDATE players SET record = 0"
     makeQuery(resetRecord)
 
 
@@ -70,7 +70,7 @@ def deletePlayers():
     '''Remove all the player records from the database.
     '''
 
-    query = "DELETE FROM players *;"
+    query = "DELETE FROM players *"
     makeQuery(query)
 
 
@@ -78,7 +78,7 @@ def countPlayers():
     '''Returns the number of players currently registered.
     '''
 
-    query = "SELECT COUNT(id) FROM players;"
+    query = "SELECT COUNT(id) FROM players"
 
     result = makeQuery(query)
     print result
@@ -90,7 +90,7 @@ def registerPlayer(name):
     @param name: name of a player in the tournament
     '''
 
-    query = "INSERT INTO players (name) VALUES (%s);"
+    query = "INSERT INTO players (name) VALUES (%s)"
     insertUpdate(query, (name,))
 
 
@@ -108,7 +108,7 @@ def playerStandings():
     query = """SELECT players.*, COUNT(player_id) AS num_matches
             FROM players LEFT OUTER JOIN matches ON 
             players.id = matches.player_id 
-            GROUP BY players.id ORDER BY players.id;"""
+            GROUP BY players.id ORDER BY players.id"""
     return makeQuery(query)
 
 
