@@ -29,7 +29,7 @@ def cursQuery(curs, queryString, tup=None):
     return curs
 
 
-def makeQuery(queryString, tup=None):
+def makeQuery(queryString, tup):
     '''Makes a query and returns the result.
     @param queryString: the sql query as a string.
     @param tup: tuple used to pass arguments where query needs to be formatted
@@ -61,9 +61,9 @@ def deleteMatches():
     '''
 
     query = "DELETE FROM matches *"
-    makeQuery(query)
+    makeQuery(query, (None,))
     resetRecord = "UPDATE players SET record = 0"
-    makeQuery(resetRecord)
+    makeQuery(resetRecord, (None,))
 
 
 def deletePlayers():
@@ -71,7 +71,7 @@ def deletePlayers():
     '''
 
     query = "DELETE FROM players *"
-    makeQuery(query)
+    makeQuery(query, (None,))
 
 
 def countPlayers():
@@ -80,7 +80,7 @@ def countPlayers():
 
     query = "SELECT COUNT(id) FROM players"
 
-    result = makeQuery(query)
+    result = makeQuery(query, (None,))
     print result
     return result[0][0]
 
@@ -109,7 +109,7 @@ def playerStandings():
             FROM players LEFT OUTER JOIN matches ON 
             players.id = matches.player_id 
             GROUP BY players.id ORDER BY players.id"""
-    return makeQuery(query)
+    return makeQuery(query, (None,))
 
 
 def reportMatch(winner, loser):
@@ -124,7 +124,7 @@ def reportMatch(winner, loser):
         @param query: sql query string
         '''
 
-        prevMatch = makeQuery(query)[0][0]
+        prevMatch = makeQuery(query, (None,))[0][0]
         if prevMatch != None:
             return prevMatch + 1
         else:
@@ -137,7 +137,7 @@ def reportMatch(winner, loser):
         returns 1.
         '''
 
-        prevRound = makeQuery(query)[0][0]
+        prevRound = makeQuery(query, (None,))[0][0]
         if prevRound != None:
             roundCount = makeQuery("""SELECT COUNT(round_num) FROM matches
                  WHERE round_num = %s """, (prevRound,))[0][0]
