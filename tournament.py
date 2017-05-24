@@ -9,13 +9,18 @@ a swiss style tournament system.
 
 import psycopg2
 
+#database name
+DATABASE = "tournament"
 
 def connect():
     '''Connect to the PostgreSQL database.  Returns a database connection.
+    If the connection fails, this will throw an exception.
     '''
-
-    return psycopg2.connect("dbname=tournament")
-
+    try:
+        return psycopg2.connect("dbname=" + DATABASE)
+    except psycopg2.OperationalError:
+        print ("A connection error ocurred. Check that the database exists" +
+        " or simply try again.")
 
 def cursQuery(curs, queryString, tup=None):
     '''Connet to database, make a query, return the cursor.
