@@ -29,7 +29,7 @@ def cursQuery(curs, queryString, tup=None):
     return curs
 
 
-def makeQuery(queryString, tup):
+def staticQuery(queryString, tup):
     '''Makes a query and returns the result.
     @param queryString: the sql query as a string.
     @param tup: tuple used to pass arguments where query needs to be formatted
@@ -38,14 +38,11 @@ def makeQuery(queryString, tup):
 
     conn = connect()
     curs = cursQuery(conn.cursor(), queryString, tup)
-    try:
-        return curs.fetchall()
-    except psycopg2.ProgrammingError:
-        conn.commit()
+    result = curs.fetchall()
     conn.close()
+    return result
 
-
-def insertUpdate(queryString, tup):
+def mutatingQuery(queryString, tup):
     '''Insert rows into the forum database safely.
     @param queryString: the sql query as a string.
     @param tup: tuple used to pass arguments where query needs to be formatted
@@ -61,9 +58,9 @@ def deleteMatches():
     '''
 
     query = "DELETE FROM matches *"
-    makeQuery(query, (None,))
+    mutatingQuery(query, (None,))
     resetRecord = "UPDATE players SET record = 0"
-    makeQuery(resetRecord, (None,))
+    mutatingQuery(resetRecord, (None,))
 
 
 def deletePlayers():
@@ -71,7 +68,7 @@ def deletePlayers():
     '''
 
     query = "DELETE FROM players *"
-    makeQuery(query, (None,))
+    mutatingQuery(query, (None,))
 
 
 def countPlayers():
@@ -80,7 +77,7 @@ def countPlayers():
 
     query = "SELECT COUNT(id) FROM players"
 
-    result = makeQuery(query, (None,))
+    result = staticQuery(query, (None,))
     print result
     return result[0][0]
 
@@ -91,7 +88,7 @@ def registerPlayer(name):
     '''
 
     query = "INSERT INTO players (name) VALUES (%s)"
-    insertUpdate(query, (name,))
+    mutatingQuery(query, (name,))
 
 
 def playerStandings():
@@ -109,7 +106,7 @@ def playerStandings():
             FROM players LEFT OUTER JOIN matches ON 
             players.id = matches.player_id 
             GROUP BY players.id ORDER BY players.id"""
-    return makeQuery(query, (None,))
+    return staticQuery(query, (None,))
 
 
 def reportMatch(winner, loser):
@@ -124,7 +121,7 @@ def reportMatch(winner, loser):
         @param query: sql query string
         '''
 
-        prevMatch = makeQuery(query, (None,))[0][0]
+        prevMatch = staticQuery(query, (None,))[0][0]
         if prevMatch != None:
             return prevMatch + 1
         else:
@@ -137,9 +134,9 @@ def reportMatch(winner, loser):
         returns 1.
         '''
 
-        prevRound = makeQuery(query, (None,))[0][0]
+        prevRound = staticQuery(query, (None,))[0][0]
         if prevRound != None:
-            roundCount = makeQuery("""SELECT COUNT(round_num) FROM matches
+            roundCount = staticQuery("""SELECT COUNT(round_num) FROM matches
                  WHERE round_num = %s """, (prevRound,))[0][0]
             if roundCount < countPlayers():
                 return prevRound
@@ -154,11 +151,11 @@ def reportMatch(winner, loser):
              VALUES (%s, %s, %s, %s), (%s, %s, %s, %s)"""
     content = (curMatch, winner, 1, curRound,
                curMatch, loser, 0, curRound)
-    insertUpdate(insert, content)
+    mutatingQuery(insert, content)
     # need to update players table for wins
     updatePlayers = """UPDATE players SET record = record + 1
                     WHERE id = %s"""
-    insertUpdate(updatePlayers, (winner,))
+    mutatingQuery(updatePlayers, (winner,))
 
 
 def swissPairings():
@@ -178,7 +175,7 @@ def swissPairings():
     '''
 
     query = """SELECT id, name FROM players ORDER BY record DESC"""
-    result = makeQuery(query, (None,))
+    result = staticQuery(query, (None,))
     print result
 
     def foldl(fun, acc, items):
