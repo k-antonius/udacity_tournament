@@ -64,9 +64,6 @@ def deleteMatches():
 
     query = "DELETE FROM matches *"
     mutatingQuery(query, (None,))
-    resetRecord = "UPDATE players SET record = 0"
-    mutatingQuery(resetRecord, (None,))
-
 
 def deletePlayers():
     '''Remove all the player records from the database.
@@ -107,10 +104,21 @@ def playerStandings():
         matches: the number of matches the player has played
     '''
 
-    query = """SELECT players.*, COUNT(player_id) AS num_matches
-            FROM players LEFT OUTER JOIN matches ON 
-            players.id = matches.player_id 
-            GROUP BY players.id ORDER BY players.id"""
+    query = """WITH n_wins AS 
+    (SELECT players.id AS id, COUNT(matches.winner_id) 
+     AS num_wins FROM players LEFT OUTER JOIN matches ON
+     players.id = matches.winner_id GROUP BY players.id), n_matches AS
+    (SELECT players.id AS id, COUNT(CASE WHEN id = matches.loser_id 
+                              or id = matches.winner_id 
+                              then 1 else null end)
+      AS num_matches
+      FROM players LEFT OUTER JOIN matches
+      ON (id = matches.loser_id OR id = matches.winner_id)
+      GROUP BY id)
+    SELECT players.*, n_wins.num_wins, n_matches.num_matches
+    FROM players, n_wins, n_matches WHERE players.id = n_wins.id AND
+    players.id = n_matches.id ORDER BY players.name;
+    """
     return staticQuery(query, (None,))
 
 
