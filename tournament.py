@@ -117,7 +117,7 @@ def playerStandings():
       GROUP BY id)
     SELECT players.*, n_wins.num_wins, n_matches.num_matches
     FROM players, n_wins, n_matches WHERE players.id = n_wins.id AND
-    players.id = n_matches.id ORDER BY players.name;
+    players.id = n_matches.id ORDER BY players.name
     """
     return staticQuery(query, (None,))
 
@@ -128,48 +128,8 @@ def reportMatch(winner, loser):
       @param winner:  the id number of the player who won
       @param loser:  the id number of the player who lost
     '''
-
-    def getCurMatch(query):
-        '''Gets the current match number
-        @param query: sql query string
-        '''
-
-        prevMatch = staticQuery(query, (None,))[0][0]
-        if prevMatch != None:
-            return prevMatch + 1
-        else:
-            return 1
-
-    def getCurRound(query):
-        '''Gets the current round.
-        @param query: sql query string
-        @return: the number of the current round. If this is the first round,
-        returns 1.
-        '''
-
-        prevRound = staticQuery(query, (None,))[0][0]
-        if prevRound != None:
-            roundCount = staticQuery("""SELECT COUNT(round_num) FROM matches
-                 WHERE round_num = %s """, (prevRound,))[0][0]
-            if roundCount < countPlayers():
-                return prevRound
-            else:
-                return prevRound + 1
-        else:
-            return 1
-
-    curRound = getCurRound("""SELECT MAX(round_num) FROM matches""")
-    curMatch = getCurMatch("""SELECT MAX(match_id) FROM matches""")
-    insert = """INSERT INTO matches (match_id, player_id, result, round_num)
-             VALUES (%s, %s, %s, %s), (%s, %s, %s, %s)"""
-    content = (curMatch, winner, 1, curRound,
-               curMatch, loser, 0, curRound)
-    mutatingQuery(insert, content)
-    # need to update players table for wins
-    updatePlayers = """UPDATE players SET record = record + 1
-                    WHERE id = %s"""
-    mutatingQuery(updatePlayers, (winner,))
-
+    query = "INSERT INTO matches (winner_id, loser_id) VALUES (%s, %s)"
+    mutatingQuery(query, (winner, loser))
 
 def swissPairings():
     '''Returns a list of pairs of players for the next round of a match.
@@ -187,7 +147,12 @@ def swissPairings():
         name2: the second player's name
     '''
 
-    query = """SELECT id, name FROM players ORDER BY record DESC"""
+    query = """SELECT id, name FROM (
+    (SELECT players.id AS id, players.name, COUNT(matches.winner_id) 
+    AS num_wins
+    FROM players LEFT OUTER JOIN matches ON
+    players.id = matches.winner_id
+    GROUP BY players.id ORDER BY num_wins DESC)) AS wins"""
     result = staticQuery(query, (None,))
     print result
 
